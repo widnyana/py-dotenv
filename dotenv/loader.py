@@ -25,6 +25,11 @@ class Loader(object):
         with open(self._filepath, "r") as f:
             for line in f.readlines():
                 k, v = _parseline(line)
+
+                if not k or not v:
+                    #: ignore blank line
+                    continue
+
                 if self._immutable and os.environ.get(k, None) is not None:
                     v = os.environ.get(k, None)
 
