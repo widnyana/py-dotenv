@@ -24,5 +24,7 @@ if __name__ == '__main__':
     d = Dotenv()
     d.load()
 
-    print os.getenv("YOUR_KEYNAME")  #: result -> YOUR_KEYNAME
+    print os.getenv("YOUR_KEYNAME")  #: result -> YOUR_VALUE
 ```
+
+Kindly check the test directory for more detailed usage.
