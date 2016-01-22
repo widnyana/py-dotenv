@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-
-__version__ = "0.1"
-
 from env import Dotenv
 
-__all__ = ["Dotenv",]
+__version__ = "0.2"
+__all__ = ["Dotenv", ]

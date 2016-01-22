@@ -9,7 +9,7 @@ from dotenv import env, loader
 
 class EnvTest(unittest.TestCase):
     def setUp(self):
-        fd, self.filepath = mkstemp()
+        fd, self.filepath = mkstemp(prefix='.env')
 
         with open(self.filepath, "w") as f:
             f.write("FOO=bar\n")
@@ -18,18 +18,21 @@ class EnvTest(unittest.TestCase):
             f.write("INDRIA=SMILING\n")
             f.write("amqp=amqp:\\guest:guest@localhost:1234/vhost")
 
+        os.chdir(os.path.dirname(self.filepath))
         self.dotenv = env.Dotenv(self.filepath)
 
-    def TestGetAbsPath(self):
-        path = env._getAbsPath()
-        curpath = os.path.join(os.getcwd(), ".env")
-        self.assertEqual(path, curpath)
+    def tearDown(self):
+        os.unlink(self.filepath)
+
+    def TestLocateEnvFile(self):
+        path = env._locate()
+        self.assertEqual(path, self.filepath)
 
     def TestParseLine(self):
         k, v = loader._parseline("# omitted")
         self.assertEqual(k, None, "Should return None")
 
-        k, v= loader._parseline("FOO=bar")
+        k, v = loader._parseline("FOO=bar")
         self.assertEqual(v, "bar", "Should return bar, {} found".format(v))
 
         k, v = loader._parseline("FOO='bar'")
@@ -60,7 +63,6 @@ class EnvTest(unittest.TestCase):
         #: got
         got = os.environ["INDRIA"]       #: should return "SMILING"
 
-
         self.assertEqual(got, expected,
                          "Loader Should Override Value. %s expected, got %s instead" % (expected, got))
 
@@ -73,6 +75,8 @@ class EnvTest(unittest.TestCase):
 
         expected = "bar"
         got = os.environ.get("FOO", None)
+        self.assertEqual(expected, got)
+        got = silo.get("FOO", None)
         self.assertEqual(expected, got)
 
     def TestDotEnvImmutable(self):

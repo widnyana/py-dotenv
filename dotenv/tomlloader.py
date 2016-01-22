@@ -1,12 +1,11 @@
-# -*- coding:utf-8 -*-
+# -*- Coding: utf-8 -*-
 import os
+import pytoml
+
 from dotenv.baseloader import BaseLoader
 
 
-class Loader(BaseLoader):
-    __author__ = 'Widnyana <me@widnyana.web.id>'
-
-    silo = {}
+class TOMLLoader(BaseLoader):
 
     def __init__(self, filepath):
         self._filepath = filepath
@@ -26,11 +25,11 @@ class Loader(BaseLoader):
 
     def _create_conf(self):
         with open(self._filepath, "r") as f:
-            for line in f.readlines():
-                k, v = _parseline(line)
+            obj = pytoml.load(f)
 
+            for k, v in obj.iteritems():
                 if not k or not v:
-                    #: ignore blank line
+                    #: ignore empty data
                     continue
 
                 if self._immutable and os.environ.get(k, None) is not None:
@@ -49,28 +48,3 @@ class Loader(BaseLoader):
                 continue
             else:
                 os.environ[key] = self.silo[key]
-
-
-def _parseline(line):
-    """Parse Line to dict"""
-    if line.startswith("#"):
-        return None, None
-
-    line = line.replace("\n","")
-
-    if line.strip():
-        quote_delimit = max(line.find('\'', line.find('\'') + 1),
-                            line.find('"', line.rfind('"')) + 1)  # find first comment mark after second quote mark
-
-        if quote_delimit == 0:
-            key, value = line.split("=")
-
-        else:
-            comment_delimit = line.find('#', quote_delimit)
-            line = line[:comment_delimit]
-            key, value = map(lambda x: x.strip().strip('\'').strip('"'),
-                             line.split('=', 1))
-        return key, value
-
-    else:
-        return None, None
