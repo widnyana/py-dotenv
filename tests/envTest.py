@@ -43,7 +43,7 @@ class EnvTest(unittest.TestCase):
         expected = "LAUGHING"  #: existing env var
         os.environ['INDRIA'] = expected
         l = loader.Loader(self.filepath)
-        l.load(immutable=True)  #: should not override
+        l.load(override=True)  #: should not override
 
         #: got
         got = os.environ["INDRIA"]  #: this should return as same as expected
@@ -56,7 +56,7 @@ class EnvTest(unittest.TestCase):
         old = "CRYING"
         os.environ['INDRIA'] = old #: existing env var
         l = loader.Loader(self.filepath)
-        silo = l.load(immutable=False)   #: this thing should override
+        silo = l.load(override=False)   #: this thing should override
         #: got
         got = os.environ["INDRIA"]       #: should return "SMILING"
 
@@ -69,7 +69,7 @@ class EnvTest(unittest.TestCase):
 
     def TestDotEnvMutable(self):
         os.environ["FOO"] = "boom"
-        silo = self.dotenv.overload()
+        silo = self.dotenv.override()
 
         expected = "bar"
         got = os.environ.get("FOO", None)
