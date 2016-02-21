@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 import os
+from .reflector import Reflector
 
 
 class Loader(object):
@@ -9,20 +10,23 @@ class Loader(object):
 
     def __init__(self, filepath):
         self._filepath = filepath
-        self._immutable = False
+        self._override = False
 
-    def load(self, immutable=False):
-        """Load .env as Config"""
-        self._immutable = immutable
-        self._ensureReadable()
+    def load(self, override=False):
+        """Load .env as Config
+        :param override: set to True to avoid overriding os' env var
+        """
+        self._override = override
+        self._ensure_readable()
 
-        self._createConf()
-        self._setEnvVar()
+        self._create_conf()
+        self._set_env_var()
 
         return self.silo
 
-    def _createConf(self):
+    def _create_conf(self):
         with open(self._filepath, "r") as f:
+            r = Reflector()
             for line in f.readlines():
                 k, v = _parseline(line)
 
@@ -30,27 +34,38 @@ class Loader(object):
                     #: ignore blank line
                     continue
 
-                if self._immutable and os.environ.get(k, None) is not None:
+                if self._override and os.environ.get(k, None) is not None:
                     v = os.environ.get(k, None)
 
-                conf = dict((x, y) for x, y in ((k,v),))
+                r.data = v
+
+                conf = dict((x, y) for x, y in ((k, r.getval()),))
                 self.silo.update(conf)
 
-    def _ensureReadable(self):
+    def _ensure_readable(self):
         if not os.access(self._filepath, os.R_OK) or not os.path.exists(self._filepath):
             raise IOError('Indria: Environment file .env not found or not readable. '
                           'Create file with your environment settings at %s' % self._filepath)
 
-    def _setEnvVar(self):
+    def _set_env_var(self):
         """Overide Environtment Variable"""
         if not isinstance(self.silo, dict):
             return
 
         for key in self.silo.keys():
-            if self._immutable and os.environ.get(key, None) is not None:
-                continue
+            if self._override and os.environ.get(key, None) is not None:
+                data = os.environ.get(key)
             else:
-                os.environ[key] = self.silo[key]
+                data = self.silo[key]
+
+            self.silo.update({
+                key: data
+            })
+
+            try:
+                os.environ[key] = str(data)
+            except Exception, e:
+                raise e
 
 
 def _parseline(line):
@@ -61,17 +76,23 @@ def _parseline(line):
     line = line.replace("\n","")
 
     if line.strip():
-        quote_delimit = max(line.find('\'', line.find('\'') + 1),
-                            line.find('"', line.rfind('"')) + 1)  # find first comment mark after second quote mark
+        quote_delimiter = max(
+            line.find('\'', line.find('\'') + 1),
+            line.find('"', line.rfind('"')) + 1     #: find first comment mark after second quote mark
+        )
 
-        if quote_delimit == 0:
+        if quote_delimiter == 0:
             key, value = line.split("=")
 
         else:
-            comment_delimit = line.find('#', quote_delimit)
-            line = line[:comment_delimit]
+            comment_delimiter = line.find('#', quote_delimiter)
+            line = line[:comment_delimiter]
+
             key, value = map(lambda x: x.strip().strip('\'').strip('"'),
                              line.split('=', 1))
+
+        key = key.strip()
+        value = value.strip()
         return key, value
 
     else:
